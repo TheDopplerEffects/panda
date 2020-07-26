@@ -31,7 +31,7 @@ def build_st(target, mkfile="Makefile", clean=True):
   cmd = 'cd %s && %s && make -f %s %s' % (os.path.join(BASEDIR, "board"), clean_cmd, mkfile, target)
   _ = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
 
-def parse_can_buffer(dat):
+def parse_can_buffer(dat, addresses = None):
   ret = []
   for j in range(0, len(dat), 0x10):
     ddat = dat[j:j + 0x10]
@@ -41,10 +41,11 @@ def parse_can_buffer(dat):
       address = f1 >> 3
     else:
       address = f1 >> 21
-    dddat = ddat[8:8 + (f2 & 0xF)]
-    if DEBUG:
-      print(f"  R 0x{address:x}: 0x{dddat.hex()}")
-    ret.append((address, f2 >> 16, dddat, (f2 >> 4) & 0xFF))
+    if address in addresses or addresses is None:
+      dddat = ddat[8:8 + (f2 & 0xF)]
+      if DEBUG:
+        print(f"  R 0x{address:x}: 0x{dddat.hex()}")
+      ret.append((address, f2 >> 16, dddat, (f2 >> 4) & 0xFF))
   return ret
 
 class PandaWifiStreaming(object):
@@ -511,7 +512,7 @@ class Panda(object):
   def can_send(self, addr, dat, bus, timeout=CAN_SEND_TIMEOUT_MS):
     self.can_send_many([[addr, None, dat, bus]], timeout=timeout)
 
-  def can_recv(self, ):
+  def can_recv(self, addresses = None):
     dat = bytearray()
     while True:
       try:
@@ -520,7 +521,7 @@ class Panda(object):
       except (usb1.USBErrorIO, usb1.USBErrorOverflow):
         print("CAN: BAD RECV, RETRYING")
         time.sleep(0.1)
-    return parse_can_buffer(dat)
+    return parse_can_buffer(dat, addresses)
 
   def can_clear(self, bus):
     """Clears all messages from the specified internal CAN ringbuffer as
