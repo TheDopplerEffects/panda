@@ -511,7 +511,7 @@ class Panda(object):
   def can_send(self, addr, dat, bus, timeout=CAN_SEND_TIMEOUT_MS):
     self.can_send_many([[addr, None, dat, bus]], timeout=timeout)
 
-  def can_recv(self):
+  def can_recv(self, ):
     dat = bytearray()
     while True:
       try:
